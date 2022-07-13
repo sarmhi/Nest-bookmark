@@ -5,6 +5,8 @@ import { AppModule } from '../src/app.module';
 import * as pactum from 'pactum';
 import { AuthDto } from '../src/auth/dto';
 import { EditUserDto } from 'src/user/dto';
+import { CreateBookmarkDto, EditBookmarkDto } from 'src/bookmark/dto';
+import { inspect } from 'util';
 
 describe('e2e test', () => {
   let app: INestApplication;
@@ -137,10 +139,103 @@ describe('e2e test', () => {
   });
 
   describe('Bookmarks', () => {
-    describe('Create Bookmarks', () => { });
-    describe('Get Bookmarks', () => { });
-    describe('Get Bookmark by Id', () => { });
-    describe('Edit Bookmark by Id', () => { });
-    describe('Delete Bookmark', () => { });
+    describe('Get Empty Bookmarks', () => {
+      it('Should get empty bookmarks', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks')
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .expectStatus(200)
+          .expectBody([])
+      })
+    });
+    describe('Create Bookmarks', () => {
+      const dto: CreateBookmarkDto = {
+        title: "First Bookmark",
+        link: 'https://www.youtube.com/watch?v=GHTA143_b-s&t=288s'
+      }
+      it('Should create a bookmark', () => {
+        return pactum
+          .spec()
+          .post('/bookmarks')
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .withBody(dto)
+          .expectStatus(201)
+          .stores('bookmarkId', 'id')
+      })
+    });
+    describe('Get Bookmarks', () => {
+      it('Should get bookmarks', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks')
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .expectStatus(200)
+          .expectJsonLength(1)
+      })
+    });
+    describe('Get Bookmark by Id', () => {
+      it('Should get bookmark by id', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks/{id}')
+          .withPathParams({ "id": '$S{bookmarkId}' })
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .expectStatus(200)
+          .expectBodyContains('$S{bookmarkId}')
+          .inspect()
+      })
+    });
+    describe('Edit Bookmark by Id', () => {
+      const dto: EditBookmarkDto = {
+        title: 'NestJs Course for Beginners - Create a REST API',
+        description:
+          'Learn NestJs by building a CRUD REST API with end-to-end tests using modern web development techniques. NestJs is a rapidly growing node js framework that helps build scalable and maintainable backend applications.'
+      }
+      it('Should edit bookmark', () => {
+        return pactum
+          .spec()
+          .patch('/bookmarks/{id}')
+          .withPathParams({ "id": '$S{bookmarkId}' })
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .withBody(dto)
+          .expectStatus(200)
+          .expectBodyContains(dto.title)
+          .expectBodyContains(dto.description)
+      })
+    });
+    describe('Delete Bookmark', () => {
+      it('Should delete bookmark', () => {
+        return pactum
+          .spec()
+          .delete('/bookmarks/{id}')
+          .withPathParams({ "id": '$S{bookmarkId}' })
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .expectStatus(204)
+      })
+
+      it('Should get empty bookmarks', () => {
+        return pactum
+          .spec()
+          .get('/bookmarks')
+          .withHeaders({
+            Authorization: 'Bearer $S{userAt}',
+          })
+          .expectStatus(200)
+          .expectJsonLength(0)
+      })
+    });
   });
 });
